@@ -1,0 +1,64 @@
+# ---------------------------------------------------------------------------
+# PUBLIC SITE REPO — GitHub Pages deploy workflow.
+#
+# Copy this file to your *public* site repository as:
+#     .github/workflows/pages.yml
+#
+# Pre-built site files (`dist/`) are pushed to this repo's `main` branch by
+# the private source repo's `deploy.yml`. This workflow takes whatever is at
+# the root of `main` and ships it as the GitHub Pages site — no build step.
+#
+# One-time setup in the PUBLIC repo:
+#   1. Settings → Pages → Build and deployment → Source: "GitHub Actions".
+#   2. (Project-page repo only, e.g. owner/blog) Confirm the URL will be
+#      `https://<owner>.github.io/<repo>/`. If you point a custom domain,
+#      add a `CNAME` file at the repo root and set `vars.SITE_URL` in the
+#      PRIVATE source repo to match.
+#
+# Auth: this workflow uses the default `GITHUB_TOKEN`, scoped via the
+# permissions block below. No PAT needed here. The PAT only lives in the
+# private repo for cross-repo pushes.
+# ---------------------------------------------------------------------------
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          # The repo root already IS the rendered site (no build step).
+          path: dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
